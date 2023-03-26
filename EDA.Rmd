@@ -1,0 +1,214 @@
+---
+title: "EDA"
+Name: "Tyusha Sarawagi"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(mosaic)
+library(Stat2Data)
+library(ggplot2)
+library(tidyverse)
+library(moments)
+library(imputeTS)
+
+data <- read.csv("~/countries of the world.csv")
+
+```
+
+
+### Data Cleaning
+
+Getting rid of the column with missing data is probably not a good idea because by doing so, I lost the data for 48 countries. 
+
+Currently we have 110 missing values.
+
+
+```{r}
+sum(is.na(data))
+```
+
+The columns Industry and Agriculture had a lot of missing values and I was not going to use these variable for my model, so I decided to get ride of them. 
+
+
+```{r}
+
+cols.dont.want <- c("Agriculture", "Industry")
+data2 <- data[, ! names(data) %in% cols.dont.want, drop = F]
+
+sum(is.na(data2))
+
+```
+
+Before, we had 111 missing values but after removing we have 79 which is a good progress. 
+
+
+I looked at the dataset and rows West Sahara and Walis and Futuna has a lot of missing values so I am going to get rid of them.
+```{r}
+data3 = data2[-c(222), ]
+
+data4 = data3[-c(223), ]
+
+sum(is.na(data4))
+```
+
+Now, we have 67 missing values in our dataset which are randomly scattered throughout the dataset so I am going to substitute missing cells with column mean. 
+
+```{r}
+
+#library(zoo)
+#na.aggregate(data4)
+
+#data6<- function(x) replace(x, is.na(x), mean(x, na.rm = TRUE))
+#data4[] <- lapply(data4, data6)
+
+data6 = na_mean(data4)
+
+```
+
+
+We can see that all the missing values have been taken care of at this point. 
+
+```{r}
+sum(is.na(data6))
+
+```
+
+
+The main variables that I want to use are Net Migration, GDP per capita, Literacy, Population density, Death Rate, Service, Infant Mortality, Phones, and Region. 
+
+
+
+### Plots and Summary Statistics
+
+
+
+```{r}
+table(data6$Region)
+```
+
+```{r}
+favstats(data6$Net.migration)
+```
+
+```{r}
+favstats(data6$Pop..Density..per.sq..mi..)
+```
+
+```{r}
+favstats(data6$GDP....per.capita.)
+```
+
+```{r}
+favstats(data6$Literacy....)
+```
+
+```{r}
+favstats(data6$Deathrate)
+```
+
+```{r}
+favstats(data6$Service)
+```
+
+
+```{r}
+favstats(data6$Infant.mortality..per.1000.births.)
+```
+
+```{r}
+favstats(data6$Phones..per.1000.)
+```
+
+
+
+```{r}
+gf_point(Net.migration~ GDP....per.capita., data=data6)
+```
+
+```{r}
+gf_point(Net.migration~ Literacy...., data=data6)
+```
+
+
+```{r}
+gf_point(Net.migration ~ Pop..Density..per.sq..mi.., data=data6)
+
+```
+
+
+
+```{r}
+gf_point(Net.migration ~ Infant.mortality..per.1000.births., data=data6)
+```
+
+
+
+```{r}
+gf_point(Net.migration ~ Phones..per.1000. , data=data6)
+```
+
+
+```{r}
+gf_point(data6$Net.migration~ data6$Deathrate)
+```
+
+
+
+```{r}
+gf_point(data6$Net.migration~ data6$Service)
+```
+
+
+
+
+```{r fig.width=5, fig.height=5 }
+
+#gf_boxplot(Net.migration~ Region, data = data6, las=2, par(mar = c(12, 5, 4, 2)+ 0.1))
+
+
+library(ggplot2)
+ggplot(data6, aes(Region, Net.migration)) + geom_boxplot() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 0.5))
+
+
+```
+
+
+I decided to see the migration rate for each region and which region has the higest and lowest migration rate. 
+
+```{r}
+data7 = data6 %>% group_by(Region) %>% summarise(new_migration =mean(Net.migration))
+data7
+
+
+ggplot(data7, aes(Region, new_migration)) + geom_boxplot() + theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 0.5))
+
+```
+
+
+### Correlation between the Variables 
+
+I am going to find the correlation between Net Migration and all the other variables to find out what variables should I add in my model. 
+
+```{r width=2, fig.height=2}
+
+cor(~cbind(Net.migration, Literacy...., Deathrate, Service),data=data6)
+
+```
+
+
+```{r}
+cor(~cbind(Net.migration,GDP....per.capita., Phones..per.1000.),data=data6)
+```
+
+
+```{r}
+data7 = rename(data6, Infant.mortality= Infant.mortality..per.1000.births., Pop..Density=Pop..Density..per.sq..mi..)
+
+cor(~cbind(Net.migration,Infant.mortality, Pop..Density),data=data7)
+```
+
+
+
